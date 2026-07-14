@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Tagger v10 — ProBreakthrough</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #030712; color: white; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Setup */
+  .setup-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .setup-box { width: 100%; max-width: 400px; }
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;600&display=swap');
+  .setup-header { text-align: center; margin-bottom: 32px; position: relative; }
+  .logo-ring {
+    width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 16px;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 30% 30%, #1e293b, #0f172a);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.3), 0 0 30px rgba(59,130,246,0.15), 0 8px 32px rgba(0,0,0,0.5);
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+  .logo-ring img { width: 72px; height: 72px; border-radius: 50%; filter: brightness(1.1) contrast(1.05); }
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(59,130,246,0.3), 0 0 30px rgba(59,130,246,0.15), 0 8px 32px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 0 0 5px rgba(59,130,246,0.5), 0 0 50px rgba(59,130,246,0.25), 0 8px 32px rgba(0,0,0,0.5); }
+  }
+  .setup-header h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 36px; font-weight: 400;
+    margin: 0; letter-spacing: 4px; color: white;
+    text-shadow: 0 0 20px rgba(59,130,246,0.3);
+  }
+  .setup-header .sub {
+    font-family: 'Outfit', sans-serif; font-weight: 300; font-size: 12px;
+    color: #3b82f6; letter-spacing: 6px; text-transform: uppercase; margin-top: 2px;
+  }
+  .setup-header .divider {
+    width: 40px; height: 2px; background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    margin: 10px auto 0; border-radius: 2px;
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .field input, .field select { width: 100%; background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 9px 11px; color: white; font-size: 13px; outline: none; }
+  .field input:focus { border-color: #2563eb; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .comp-btns { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+  .comp-btn { padding: 4px 9px; border-radius: 6px; font-size: 12px; border: none; cursor: pointer; background: #1f2937; color: #9ca3af; }
+  .comp-btn.active { background: #2563eb; color: white; }
+  .start-btn { width: 100%; padding: 11px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; margin-top: 18px; background: #2563eb; color: white; font-size: 14px; }
+  .start-btn:disabled { background: #374151; color: #6b7280; cursor: default; }
+
+  /* Autocomplete */
+  .auto-wrap { position: relative; }
+  .auto-list { position: absolute; top: 100%; left: 0; right: 0; background: #1f2937; border: 1px solid #374151; border-radius: 8px; max-height: 160px; overflow-y: auto; z-index: 20; margin-top: 3px; display: none; }
+  .auto-list.show { display: block; }
+  .auto-item { padding: 7px 11px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #111827; }
+  .auto-item:hover { background: #374151; }
+
+  /* Tagging */
+  .tag-header { background: #111827; border-bottom: 1px solid #1f2937; padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+  .tag-header .info { font-size: 14px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+  .tag-header .vs { color: #6b7280; font-size: 11px; }
+  .finish-btn { background: #2563eb; color: white; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 7px; border: none; cursor: pointer; }
+  .tag-body { padding: 10px; max-width: 540px; margin: 0 auto; }
+
+  .sec { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 7px 12px; margin-bottom: 8px; }
+  .sec-head { display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
+  .sec-pct { font-size: 10px; color: #4b5563; }
+
+  .counter { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+  .counter-label { font-size: 13px; color: #d1d5db; min-width: 90px; }
+  .counter-controls { display: flex; align-items: center; gap: 7px; }
+  .c-btn { width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .c-btn.dec { background: #1f2937; color: #9ca3af; }
+  .c-btn.inc { color: white; }
+  .c-val { font-size: 17px; font-weight: 700; width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* Score row */
+  .score-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .score-item { text-align: center; }
+  .score-item .lbl { font-size: 10px; color: #6b7280; }
+  .score-item .val-row { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 3px; }
+  .score-item .val { font-size: 18px; font-weight: 700; }
+  .score-item .s-btn { width: 24px; height: 24px; border-radius: 50%; background: #1f2937; border: none; cursor: pointer; color: #9ca3af; }
+  .score-item .s-btn.plus { color: white; }
+  #pbIndexLive { width: 100%; }
+
+  /* Timestamps */
+  .ts-row { display: flex; gap: 5px; margin-bottom: 5px; }
+  .ts-time { width: 58px; background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 5px 7px; color: white; font-family: monospace; font-size: 12px; outline: none; }
+  .ts-note { flex: 1; background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 5px 7px; color: white; font-size: 12px; outline: none; }
+  .ts-hl { padding: 0 7px; border-radius: 6px; cursor: pointer; font-size: 12px; background: #1f2937; color: #6b7280; border: 1px solid #374151; }
+  .ts-hl.on { background: #ca8a04; color: white; border: none; }
+  .ts-add { background: #1f2937; border: 1px solid #374151; color: white; padding: 0 9px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .ts-entry { display: flex; align-items: center; gap: 5px; font-size: 12px; padding: 2px 5px; border-radius: 5px; margin-bottom: 2px; }
+  .ts-entry.normal { background: rgba(31,41,55,0.5); }
+  .ts-entry.highlight { background: rgba(120,80,0,0.15); }
+  .ts-entry .t { font-family: monospace; color: #9ca3af; width: 40px; }
+  .ts-entry .star { color: #fbbf24; }
+  .ts-entry .n { flex: 1; color: #d1d5db; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ts-entry .rm { color: #4b5563; cursor: pointer; background: none; border: none; font-size: 10px; }
+  #tacticalNotes { width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 7px; padding: 7px 9px; color: white; font-size: 12px; outline: none; resize: none; font-family: inherit; }
+
+  /* Summary */
+  .sum-wrap { padding: 16px; max-width: 540px; margin: 0 auto; }
+  .sum-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .sum-header h2 { font-size: 20px; font-weight: 700; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+  .back-btn { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 13px; }
+  .sum-info { background: #111827; border-radius: 10px; padding: 12px; border: 1px solid #1f2937; margin-bottom: 12px; }
+  .sum-info .name { font-weight: 600; font-size: 15px; }
+  .sum-info .meta { font-size: 12px; color: #9ca3af; }
+  .sum-scores { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .sum-score { background: #111827; border-radius: 8px; padding: 8px; text-align: center; border: 1px solid #1f2937; }
+  .sum-score .v { font-size: 20px; font-weight: 700; }
+  .sum-score .l { font-size: 10px; color: #9ca3af; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .bar-label { width: 50px; text-align: right; font-size: 11px; color: #9ca3af; }
+  .bar-bg { flex: 1; height: 20px; background: #1f2937; border-radius: 99px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 99px; }
+  .bar-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; }
+  .sum-recup { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 12px 0; }
+  .sum-recup-item { background: #111827; border-radius: 8px; padding: 8px; text-align: center; border: 1px solid #1f2937; }
+  .sum-recup-item .v { font-size: 18px; font-weight: 700; }
+  .sum-recup-item .l { font-size: 10px; color: #9ca3af; }
+
+  .success-box { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 12px; margin-top: 12px; text-align: center; display: none; }
+  .success-box.show { display: block; }
+  .success-box .check { font-size: 16px; }
+  .success-box .msg { font-weight: 600; color: #10b981; font-size: 14px; }
+  .success-box .sub { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+  .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .copy-btn, .reset-btn { padding: 11px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid #374151; }
+  .copy-btn { background: #2563eb; color: white; border: none; }
+  .copy-btn.copied { background: #16a34a; }
+  .copy-btn.loading { background: #6b7280; }
+  .reset-btn { background: #1f2937; color: #9ca3af; }
+
+  /* Report Generation */
+  .report-btn { padding: 11px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; border: none; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; margin-top: 8px; width: 100%; }
+  .report-btn:disabled { opacity: 0.5; cursor: default; }
+  .report-btn.done { background: #16a34a; }
+  .report-status { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 6px; min-height: 16px; }
+  .api-field { margin-bottom: 12px; }
+  .api-field label { display: block; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .api-row { display: flex; gap: 6px; }
+  .api-row input { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 9px 11px; color: #6b7280; font-size: 11px; outline: none; font-family: monospace; }
+  .api-row input:focus { border-color: #8b5cf6; color: white; }
+  .api-toggle { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 0 10px; color: #6b7280; cursor: pointer; font-size: 11px; white-space: nowrap; }
+  .api-hint { font-size: 9px; color: #4b5563; margin-top: 3px; }
+  .report-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.85); overflow-y: auto; }
+  .report-modal.show { display: block; }
+  .report-modal-bar { position: sticky; top: 0; z-index: 101; background: #111827; border-bottom: 1px solid #374151; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .report-modal-bar button { padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; border: none; }
+  .report-close { background: #374151; color: #9ca3af; }
+  .report-print { background: #2563eb; color: white; }
+  .report-save { background: #16a34a; color: white; }
+  .report-save:disabled { opacity: 0.5; cursor: default; }
+  .report-frame { max-width: 850px; margin: 16px auto; background: #030712; border-radius: 10px; overflow: hidden; }
+  .zone-popup {
+    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 16px;
+    z-index: 50; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .zone-popup.show { display: block; }
+  .zone-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
+  .zone-overlay.show { display: block; }
+  .zone-popup .title { font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 600; }
+  .zone-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .zone-btn { padding: 12px 16px; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .zone-btn:hover { border-color: #3b82f6; background: rgba(59,130,246,0.15); }
+  .zone-btn .znum { font-size: 18px; font-weight: 800; display: block; }
+  .zone-btn .zlabel { font-size: 9px; color: #6b7280; display: block; margin-top: 2px; }
+
+  @media print {
+    body > *:not(.report-modal) { display: none !important; }
+    .report-modal { position: static; background: none; }
+    .report-modal-bar { display: none; }
+    .report-frame { margin: 0; max-width: none; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP ═══ -->
+<div id="setupPage" class="page active">
+  <div class="setup-wrap">
+    <div class="setup-box">
+      <div class="setup-header">
+        <div class="logo-ring">
+          <img src="data:image/png;base64,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" alt="ProBreakthrough">
+        </div>
+        <h1>MATCH TAGGER</h1>
+        <div class="sub">ProBreakthrough</div>
+        <div class="divider"></div>
+      </div>
+      <div class="field auto-wrap">
+        <label>Athlete</label>
+        <input id="athInput" placeholder="Type a name..." autocomplete="off">
+        <div id="athList" class="auto-list"></div>
+      </div>
+      <div class="field">
+        <label>Opponent</label>
+        <input id="advInput" placeholder="Opposing team">
+      </div>
+      <div class="row2">
+        <div class="field"><label>Date</label><input type="date" id="dateInput"></div>
+        <div class="field"><label>Minutes</label><input type="number" id="minInput" value="90"></div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Position</label>
+          <select id="posInput">
+            <option value="MID">MID (CM, CDM, CAM)</option>
+            <option value="ATT">ATT (ST, LW, RW)</option>
+            <option value="DEF">DEF (CB, FB, WB)</option>
+            <option value="GK">GK (Goalkeeper)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="catInput">
+            <option value="">—</option>
+            <option value="U13">U13</option><option value="U14">U14</option>
+            <option value="U15">U15</option><option value="U16">U16</option>
+            <option value="U17">U17</option><option value="U18">U18</option>
+            <option value="U19">U19</option><option value="Senior">Senior</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Competition</label>
+        <div class="comp-btns" id="compBtns">
+          <button class="comp-btn active" onclick="pickComp(this,'League')">League</button>
+          <button class="comp-btn" onclick="pickComp(this,'Cup')">Cup</button>
+          <button class="comp-btn" onclick="pickComp(this,'Friendly')">Friendly</button>
+          <button class="comp-btn" onclick="pickComp(this,'Showcase')">Showcase</button>
+          <button class="comp-btn" onclick="pickComp(this,'Tournament')">Tournament</button>
+        </div>
+      </div>
+      <div class="api-field">
+        <label>🔑 API Key (for report generation)</label>
+        <div class="api-row">
+          <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+          <!-- API key always hidden for security -->
+        </div>
+        <div class="api-hint">Optional — needed only for "Generate Report". <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#6366f1;">Get a key</a></div>
+      </div>
+      <div class="field">
+        <label>📊 Google Sheets Web App URL</label>
+        <input id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/..." autocomplete="off">
+        <div class="api-hint">URL du Web App (voir guide de déploiement)</div>
+      </div>
+      <button class="start-btn" id="startBtn" disabled>Start →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAGGING ═══ -->
+<div id="tagPage" class="page">
+  <div class="tag-header">
+    <span class="info"><span id="tagAth"></span> <span class="vs">vs</span> <span id="tagAdv"></span> <span id="tagPos" style="background:#2563eb;color:white;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:6px;font-weight:600;"></span></span>
+    <button class="finish-btn" onclick="showPage('done')">Finish →</button>
+  </div>
+  <div class="tag-body" id="tagBody"></div>
+</div>
+
+<!-- ═══ SUMMARY ═══ -->
+<div id="donePage" class="page">
+  <div class="sum-wrap">
+    <div class="sum-header">
+      <h2>📊 Summary</h2>
+      <button class="back-btn" onclick="showPage('tag')">← Back</button>
+    </div>
+    <div class="sum-info">
+      <div class="name" id="sumName"></div>
+      <div class="meta" id="sumMeta"></div>
+    </div>
+    <div class="sum-scores" id="sumScores"></div>
+    <div id="sumBars"></div>
+    <div class="sum-recup" id="sumRecup"></div>
+    <div class="success-box" id="successBox">
+      <div class="check">✅</div>
+      <div class="msg">Data sent!</div>
+      <div class="sub">Check your Google Sheets for the new entry</div>
+    </div>
+    <div class="action-btns">
+      <button class="copy-btn" id="copyBtn" onclick="sendToSheets()">📊 Envoyer à Google Sheets</button>
+      <button class="reset-btn" onclick="resetAll()">🔄 New match</button>
+    </div>
+    <button class="report-btn" id="reportBtn" onclick="generateReport()">📄 Generate Post-Match Report</button>
+    <div class="report-status" id="reportStatus"></div>
+  </div>
+</div>
+
+<!-- ═══ REPORT MODAL ═══ -->
+<div class="report-modal" id="reportModal">
+  <div class="report-modal-bar">
+    <span style="color:#d1d5db;font-size:13px;font-weight:600;">Post-Match Report</span>
+    <div style="display:flex;gap:8px;">
+      <button class="report-save" id="saveBtn" onclick="saveToDrive()">💾 Sauvegarder dans Drive</button>
+      <button class="report-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+      <button class="report-close" onclick="document.getElementById('reportModal').classList.remove('show')">✕ Close</button>
+    </div>
+  </div>
+  <div class="report-frame" id="reportFrame"></div>
+</div>
+
+<div class="zone-overlay" id="zoneOverlay" onclick="cancelZone()"></div>
+<div class="zone-popup" id="zonePopup">
+  <div class="title" id="zoneTitle">Zone</div>
+  <div class="zone-btns">
+    <button class="zone-btn" onclick="selectZone(1)"><span class="znum">1</span><span class="zlabel">Def. own box</span></button>
+    <button class="zone-btn" onclick="selectZone(2)"><span class="znum">2</span><span class="zlabel">Def. midfield</span></button>
+    <button class="zone-btn" onclick="selectZone(3)"><span class="znum">3</span><span class="zlabel">Att. midfield</span></button>
+    <button class="zone-btn" onclick="selectZone(4)"><span class="znum">4</span><span class="zlabel">Att. final third</span></button>
+  </div>
+</div>
+
+<script>
+const ATHLETES = ["Paul Lahaie","Edouard Ferguson","Philippe Lagueux","Alexi Cloutier","Émile Morissette","Matis Girard","Oscar Denolf","Thomas St-Denis","Loic Gaboury","Malik Hébert","Thomas Straten","Sebastian St-John","Justin Hains","Laurent Létourneau","Maverik Courchesne","Matis Fortin","Arnaud Bédard","Charles Daoust Charest"];
+const COMPS = ["League","Cup","Friendly","Showcase","Tournament"];
+const COMP_TO_NOTION = {"League":"Ligue","Cup":"Coupe","Friendly":"Amical","Showcase":"Showcase","Tournament":"Tournoi"};
+const STATS = [
+  {section:"Score & Index", type:"score"},
+  {section:"Tirs", pctFn:()=>pct(D.tc,D.tirs), stats:[
+    {id:"tirs",label:"⚽ Shot",color:"#ef4444"},{id:"tc",label:"🎯 On target",color:"#ef4444"}]},
+  {section:"Passes", pctFn:()=>pct(D.pfr+D.plbr,D.pf+D.plb), stats:[
+    {id:"pf",label:"➡️ Forward pass",color:"#3b82f6"},{id:"pfr",label:"✅ Fwd completed",color:"#3b82f6"},
+    {id:"plb",label:"↔️ Lat/Back pass",color:"#60a5fa"},{id:"plbr",label:"✅ L/B completed",color:"#60a5fa"},
+    {id:"pk",label:"🔑 Key pass",color:"#3b82f6"},{id:"pkr",label:"🔑✓ Key compl.",color:"#3b82f6"}]},
+  {section:"Duels", pctFn:()=>pct(D.dg,D.du), stats:[
+    {id:"du",label:"⚔️ Duel",color:"#f59e0b"},{id:"dg",label:"💪 Won",color:"#f59e0b"},
+    {id:"ae",label:"🦅 Aerial",color:"#f59e0b"},{id:"ag",label:"🦅✓ Won",color:"#f59e0b"}]},
+  {section:"Technique", pctFn:()=>D.dr>0?`D:${pct(D.drr,D.dr)}`:"", stats:[
+    {id:"dr",label:"🏃 Dribble",color:"#10b981"},{id:"drr",label:"✓ Successful",color:"#10b981"},
+    {id:"ta",label:"🦶 Tackle",color:"#10b981"},{id:"tr",label:"✓ Successful",color:"#10b981"}]},
+  {section:"Recovery", stats:[
+    {id:"int",label:"🛡️ Interception",color:"#8b5cf6"},{id:"br",label:"🔄 Ball recovery",color:"#06b6d4"}]},
+  {section:"Discipline", stats:[
+    {id:"cj",label:"🟨 Yellow card",color:"#eab308"},
+    {id:"cr",label:"🟥 Red card",color:"#ef4444"}]},
+];
+
+const ZONE_STATS = ['int','br','dg','drr','tr'];
+
+let D = {buts:0,ast:0,tirs:0,tc:0,pf:0,pfr:0,plb:0,plbr:0,pk:0,pkr:0,du:0,dg:0,ae:0,ag:0,dr:0,drr:0,ta:0,tr:0,int:0,br:0,cj:0,cr:0,notes:"",int_z:[0,0,0,0],br_z:[0,0,0,0],dg_z:[0,0,0,0],drr_z:[0,0,0,0],tr_z:[0,0,0,0]};
+let INFO = {ath:"",adv:"",date:"",comp:"League",min:90,pos:"MID",cat:""};
+let TS = [];
+let tsHL = false;
+let lastAnalysis = null;
+
+function pct(n,d){ return d>0? Math.round(n/d*100)+"%":"—"; }
+
+// Setup
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("dateInput").value = today;
+
+// Competitions (buttons are static in HTML for reliability)
+function pickComp(btn, c) {
+  INFO.comp = c;
+  document.querySelectorAll('#compBtns .comp-btn').forEach(x => x.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Autocomplete
+const athInput = document.getElementById("athInput");
+const athList = document.getElementById("athList");
+athInput.addEventListener("input", () => {
+  const v = athInput.value.toLowerCase();
+  INFO.ath = athInput.value;
+  checkStart();
+  if(!v){ athList.classList.remove("show"); return; }
+  const f = ATHLETES.filter(a=>a.toLowerCase().includes(v));
+  if(f.length===0){ athList.classList.remove("show"); return; }
+  athList.innerHTML = "";
+  f.forEach(a => {
+    const d = document.createElement("div");
+    d.className = "auto-item";
+    d.textContent = a;
+    d.onclick = () => { athInput.value=a; INFO.ath=a; athList.classList.remove("show"); checkStart(); };
+    athList.appendChild(d);
+  });
+  athList.classList.add("show");
+});
+athInput.addEventListener("focus", () => { if(athInput.value) athInput.dispatchEvent(new Event("input")); });
+document.addEventListener("click", e => { if(!e.target.closest(".auto-wrap")) athList.classList.remove("show"); });
+
+const advInput = document.getElementById("advInput");
+advInput.addEventListener("input", () => { INFO.adv=advInput.value; checkStart(); });
+
+// Google Sheets URL management
+let SHEETS_URL = "";
+function loadSheetsUrl(){
+  const saved = localStorage.getItem("pb_sheets_url");
+  if(saved){
+    SHEETS_URL = saved;
+    document.getElementById("sheetsUrlInput").value = SHEETS_URL;
+  }
+}
+document.getElementById("sheetsUrlInput").addEventListener("input", (e) => {
+  SHEETS_URL = e.target.value.trim();
+  localStorage.setItem("pb_sheets_url", SHEETS_URL);
+});
+
+// API Key (always hidden)
+let API_KEY = "";
+
+function checkStart(){
+  document.getElementById("startBtn").disabled = !(INFO.ath && INFO.adv);
+}
+
+document.getElementById("startBtn").onclick = () => {
+  INFO.date = document.getElementById("dateInput").value || today;
+  INFO.min = parseInt(document.getElementById("minInput").value) || 90;
+  INFO.pos = document.getElementById("posInput").value || "MID";
+  INFO.cat = document.getElementById("catInput").value || "";
+  API_KEY = (document.getElementById("apiKeyInput").value || "").trim();
+  buildTagPage();
+  showPage("tag");
+};
+
+function showPage(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id+"Page").classList.add("active");
+  if(id==="done") buildSummary();
+}
+
+// Build tagging page
+function buildTagPage(){
+  document.getElementById("tagAth").textContent = INFO.ath;
+  document.getElementById("tagAdv").textContent = INFO.adv;
+  document.getElementById("tagPos").textContent = INFO.pos;
+  const body = document.getElementById("tagBody");
+  body.innerHTML = "";
+
+  STATS.forEach(group => {
+    const sec = document.createElement("div");
+    sec.className = "sec";
+
+    if(group.type === "score"){
+      sec.innerHTML = `
+        <div class="sec-head"><span class="sec-title">${group.section}</span></div>
+        <div class="score-grid">
+          <div class="score-item"><div class="lbl">Buts</div><div class="val-row">
+            <button class="s-btn" onclick="adj('buts',-1)">−</button>
+            <span class="val" id="v_buts">0</span>
+            <button class="s-btn plus" onclick="adj('buts',1)">+</button></div></div>
+          <div class="score-item"><div class="lbl">Assists</div><div class="val-row">
+            <button class="s-btn" onclick="adj('ast',-1)">−</button>
+            <span class="val" id="v_ast">0</span>
+            <button class="s-btn plus" onclick="adj('ast',1)">+</button></div></div>
+          <div class="score-item"><div class="lbl">PB Index</div>
+            <div id="pbIndexLive" style="font-size:18px;font-weight:700;color:#60a5fa;text-align:center;margin-top:3px;">—</div></div>
+        </div>`;
+    } else {
+      const pctId = "pct_"+group.section.replace(/\s/g,"");
+      let html = `<div class="sec-head"><span class="sec-title">${group.section}</span><span class="sec-pct" id="${pctId}"></span></div>`;
+      group.stats.forEach(s => {
+        html += `<div class="counter">
+          <span class="counter-label">${s.label}</span>
+          <div class="counter-controls">
+            <button class="c-btn dec" onclick="adj('${s.id}',-1)">−</button>
+            <span class="c-val" id="v_${s.id}">0</span>
+            <button class="c-btn inc" style="background:${s.color}" onclick="${ZONE_STATS.includes(s.id)?'adjWithZone':'adj'}('${s.id}',1)">+</button>
+          </div></div>`;
+      });
+      sec.innerHTML = html;
+    }
+    body.appendChild(sec);
+  });
+
+  // Timestamps
+  const tsSec = document.createElement("div");
+  tsSec.className = "sec";
+  tsSec.innerHTML = `
+    <div class="sec-head"><span class="sec-title" id="tsTitle">🕐 Timestamps (0)</span></div>
+    <div class="ts-row">
+      <input class="ts-time" id="tsTime" placeholder="12:34">
+      <input class="ts-note" id="tsNote" placeholder="Note...">
+      <button class="ts-hl" id="tsHlBtn" onclick="toggleHL()">⭐</button>
+      <button class="ts-add" onclick="addTS()">+</button>
+    </div>
+    <div id="tsList"></div>`;
+  body.appendChild(tsSec);
+
+  // Notes
+  const notesSec = document.createElement("div");
+  notesSec.className = "sec";
+  notesSec.innerHTML = `
+    <div class="sec-head"><span class="sec-title">📝 Tactical notes</span></div>
+    <textarea id="tacticalNotes" rows="3" placeholder="Observations..."></textarea>`;
+  body.appendChild(notesSec);
+
+  // Enter key for timestamps
+  setTimeout(()=>{
+    const tsTime = document.getElementById("tsTime");
+    const tsNote = document.getElementById("tsNote");
+    if(tsTime) tsTime.addEventListener("keydown", e=>{ if(e.key==="Enter") addTS(); });
+    if(tsNote) tsNote.addEventListener("keydown", e=>{ if(e.key==="Enter") addTS(); });
+  }, 50);
+}
+
+function adj(id, delta){
+  if(id==="buts"||id==="ast"){
+    D[id] = Math.max(0, D[id]+delta);
+  } else {
+    D[id] = Math.max(0, D[id]+delta);
+  }
+  const el = document.getElementById("v_"+id);
+  if(el) el.textContent = D[id];
+  updatePcts();
+}
+
+function updatePcts(){
+  const pbEl = document.getElementById("pbIndexLive");
+  if(pbEl) pbEl.textContent = calcPBIndex();
+  STATS.forEach(g => {
+    if(g.pctFn){
+      const el = document.getElementById("pct_"+g.section.replace(/\s/g,""));
+      if(el) el.textContent = g.pctFn();
+    }
+  });
+}
+
+let pendingZoneStat = null;
+
+function adjWithZone(id, delta) {
+  if (delta > 0 && ZONE_STATS.includes(id)) {
+    pendingZoneStat = id;
+    const labels = {int:'Interception',br:'Ball Recovery',dg:'Duel Won',drr:'Dribble OK',tr:'Tackle OK'};
+    document.getElementById('zoneTitle').textContent = labels[id] + ' — Zone ?';
+    document.getElementById('zonePopup').classList.add('show');
+    document.getElementById('zoneOverlay').classList.add('show');
+  } else {
+    adj(id, delta);
+  }
+}
+
+function selectZone(z) {
+  if (pendingZoneStat) {
+    D[pendingZoneStat] = Math.max(0, D[pendingZoneStat] + 1);
+    D[pendingZoneStat + '_z'][z-1]++;
+    const el = document.getElementById('v_' + pendingZoneStat);
+    if (el) el.textContent = D[pendingZoneStat];
+    updatePcts();
+    pendingZoneStat = null;
+  }
+  document.getElementById('zonePopup').classList.remove('show');
+  document.getElementById('zoneOverlay').classList.remove('show');
+}
+
+function cancelZone() {
+  pendingZoneStat = null;
+  document.getElementById('zonePopup').classList.remove('show');
+  document.getElementById('zoneOverlay').classList.remove('show');
+}
+
+function toggleHL(){
+  tsHL = !tsHL;
+  const btn = document.getElementById("tsHlBtn");
+  btn.className = "ts-hl" + (tsHL?" on":"");
+}
+
+function addTS(){
+  const time = document.getElementById("tsTime").value.trim();
+  if(!time) return;
+  const note = document.getElementById("tsNote").value.trim();
+  TS.push({time, note, hl:tsHL, id:Date.now()});
+  document.getElementById("tsTime").value = "";
+  document.getElementById("tsNote").value = "";
+  tsHL = false;
+  document.getElementById("tsHlBtn").className = "ts-hl";
+  renderTS();
+  document.getElementById("tsTime").focus();
+}
+
+function removeTS(id){
+  TS = TS.filter(t=>t.id!==id);
+  renderTS();
+}
+
+function renderTS(){
+  const list = document.getElementById("tsList");
+  const title = document.getElementById("tsTitle");
+  title.textContent = `🕐 Timestamps (${TS.length})`;
+  list.innerHTML = "";
+  TS.forEach(t => {
+    const entry = document.createElement("div");
+    entry.className = "ts-entry" + (t.hl?" highlight":"");
+    entry.innerHTML = `
+      <span class="t">${t.time}</span>
+      ${t.hl?'<span class="star">⭐</span>':''}
+      <span class="n">${t.note||"—"}</span>
+      <button class="rm" onclick="removeTS(${t.id})">✕</button>`;
+    list.appendChild(entry);
+  });
+}
+
+function calcPBIndex(){
+  const weights = {buts:10, ast:8, tc:3, pfr:1, plbr:1, pkr:2, dg:2, ag:3, drr:2, tr:2, int:2, br:1};
+  let score = 0;
+  for(let k in weights) score += (D[k]||0) * weights[k];
+  return Math.round(score);
+}
+
+const BENCH = {
+  shots_pct: 35,
+  passes_pct: 82,
+  key_p_pct: 50,
+  duels_pct: 55,
+  aerials_pct: 60,
+  dribbles_pct: 65,
+  tackles_pct: 70,
+  interceptions: 2.5,
+  recoveries: 8
+};
+
+function buildSummary(){
+  D.notes = document.getElementById("tacticalNotes").value || "";
+
+  document.getElementById("sumName").textContent = INFO.ath;
+  document.getElementById("sumMeta").textContent = `vs ${INFO.adv} • ${INFO.date} • ${INFO.comp}`;
+
+  const pbIndex = calcPBIndex();
+  const ps = (n,t) => t>0 ? Math.round(n/t*100)+"%" : "—";
+
+  const scores = `
+    <div class="sum-score"><div class="v">${D.buts}</div><div class="l">Goals</div></div>
+    <div class="sum-score"><div class="v">${D.ast}</div><div class="l">Assists</div></div>
+    <div class="sum-score"><div class="v">${pbIndex}</div><div class="l">PB Index</div></div>`;
+  document.getElementById("sumScores").innerHTML = scores;
+
+  const bars = `
+    <div class="bar-row">
+      <div class="bar-label">Fwd Pass</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ps(D.pfr,D.pf).replace('%','').replace('—','0'),100)}%;background:#3b82f6;"></div><div class="bar-text">${ps(D.pfr,D.pf)}</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Lat/Back</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ps(D.plbr,D.plb).replace('%','').replace('—','0'),100)}%;background:#60a5fa;"></div><div class="bar-text">${ps(D.plbr,D.plb)}</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Shots OT</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ps(D.tc,D.tirs).replace('%','').replace('—','0'),100)}%;background:#ef4444;"></div><div class="bar-text">${ps(D.tc,D.tirs)}</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Duels</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ps(D.dg,D.du).replace('%','').replace('—','0'),100)}%;background:#f59e0b;"></div><div class="bar-text">${ps(D.dg,D.du)}</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Dribbles</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ps(D.drr,D.dr).replace('%','').replace('—','0'),100)}%;background:#10b981;"></div><div class="bar-text">${ps(D.drr,D.dr)}</div></div>
+    </div>`;
+  document.getElementById("sumBars").innerHTML = bars;
+
+  const recup = `
+    <div class="sum-recup-item"><div class="v">${D.int}</div><div class="l">Interceptions</div></div>
+    <div class="sum-recup-item"><div class="v">${D.br}</div><div class="l">Ball recoveries</div></div>`;
+  document.getElementById("sumRecup").innerHTML = recup;
+
+  // Zone distribution display
+  const zoneLabels = ['Z1 Def','Z2 Mid-D','Z3 Mid-A','Z4 Att'];
+  const zoneNames = {int:'Interceptions',br:'Ball Recoveries',dg:'Duels Won',drr:'Dribbles OK',tr:'Tackles OK'};
+  let zoneHTML = '';
+  for(const sid of ZONE_STATS) {
+    const zArr = D[sid+'_z'];
+    const total = zArr.reduce((a,b)=>a+b,0);
+    if(total > 0) {
+      zoneHTML += `<div style="background:#111827;border:1px solid #1f2937;border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px;">${zoneNames[sid]} — Zones</div>
+        <div style="display:flex;gap:6px;">
+          ${zArr.map((v,i)=>`<div style="flex:1;text-align:center;background:#1f2937;border-radius:6px;padding:4px;">
+            <div style="font-size:14px;font-weight:700;color:white;">${v}</div>
+            <div style="font-size:8px;color:#6b7280;">${zoneLabels[i]}</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+  }
+  // Remove existing zones display first to prevent duplicates
+  const existingZones = document.getElementById("sumZones");
+  if(existingZones) existingZones.remove();
+  if(zoneHTML) {
+    document.getElementById("sumRecup").insertAdjacentHTML('afterend', '<div id="sumZones">'+zoneHTML+'</div>');
+  }
+}
+
+function sendToSheets(){
+  if(!SHEETS_URL){
+    document.getElementById("successBox").classList.add("show");
+    const msg = document.querySelector(".success-box .msg");
+    msg.textContent = "Error: Google Sheets URL not configured";
+    msg.style.color = "#ef4444";
+    setTimeout(() => {
+      msg.textContent = "Data sent!";
+      msg.style.color = "#10b981";
+      document.getElementById("successBox").classList.remove("show");
+    }, 3000);
+    return;
+  }
+
+  const btn = document.getElementById("copyBtn");
+  btn.textContent = "⏳ Sending...";
+  btn.classList.add("loading");
+  btn.disabled = true;
+
+  const hasHL = TS.some(t=>t.hl);
+  const tsText = TS.map(t=>`${t.time}${t.hl?" ⭐":""} — ${t.note||"—"}`).join(" | ");
+
+  const payload = {
+    date: INFO.date,
+    athlete: INFO.ath,
+    opponent: INFO.adv,
+    competition: INFO.comp,
+    position: INFO.pos,
+    category: INFO.cat,
+    minutes: INFO.min,
+    pb_index: calcPBIndex(),
+    goals: D.buts,
+    assists: D.ast,
+    shots: D.tirs,
+    shots_on_target: D.tc,
+    passes: (D.pf+D.plb),
+    passes_completed: (D.pfr+D.plbr),
+    forward_passes: D.pf,
+    forward_completed: D.pfr,
+    lateral_back_passes: D.plb,
+    lateral_back_completed: D.plbr,
+    key_passes: D.pk,
+    key_passes_completed: D.pkr,
+    duels: D.du,
+    duels_won: D.dg,
+    aerials: D.ae,
+    aerials_won: D.ag,
+    dribbles: D.dr,
+    dribbles_successful: D.drr,
+    tackles: D.ta,
+    tackles_successful: D.tr,
+    interceptions: D.int,
+    ball_recoveries: D.br,
+    yellow_cards: D.cj,
+    red_cards: D.cr,
+    int_zones: D.int_z.join(','),
+    br_zones: D.br_z.join(','),
+    dg_zones: D.dg_z.join(','),
+    drr_zones: D.drr_z.join(','),
+    tr_zones: D.tr_z.join(','),
+    highlight: hasHL ? "YES" : "",
+    tactical_notes: D.notes,
+    timestamps: tsText,
+    ai_match_summary: lastAnalysis?.match_summary || "",
+    ai_bullets_positive: lastAnalysis?.bullets_positive ? lastAnalysis.bullets_positive.join(" | ") : "",
+    ai_bullets_improve: lastAnalysis?.bullets_improve ? lastAnalysis.bullets_improve.join(" | ") : "",
+    ai_bullets_growth: lastAnalysis?.bullets_growth ? lastAnalysis.bullets_growth.join(" | ") : "",
+    ai_strengths: lastAnalysis?.strengths ? JSON.stringify(lastAnalysis.strengths) : "",
+    ai_development: lastAnalysis?.development ? JSON.stringify(lastAnalysis.development) : "",
+    ai_next_objective: lastAnalysis?.next_match_objective || "",
+    ai_short_term: lastAnalysis?.short_term || "",
+    ai_medium_term: lastAnalysis?.medium_term || "",
+    ai_drills: lastAnalysis?.drills ? lastAnalysis.drills.join(" | ") : "",
+    ai_watch_reference: lastAnalysis?.watch_reference || "",
+    ai_watch_url: lastAnalysis?.watch_url || "",
+    ai_quote: lastAnalysis?.quote || ""
+  };
+
+  // Google Apps Script redirects (302) so we must use no-cors from local files.
+  // With no-cors, response is "opaque" — we can't read it, but data IS sent.
+  fetch(SHEETS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    // With no-cors we always land here (opaque response).
+    // Data has been sent successfully.
+    document.getElementById("successBox").classList.add("show");
+    const msg = document.querySelector(".success-box .msg");
+    const sub = document.querySelector(".success-box .sub");
+    msg.textContent = "✅ Données envoyées!";
+    msg.style.color = "#10b981";
+    sub.textContent = "Vérifie ton Google Sheet pour la nouvelle entrée";
+    btn.textContent = "✅ Envoyé!";
+    btn.classList.remove("loading");
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "📊 Envoyer à Google Sheets";
+      btn.classList.remove("copied");
+      btn.disabled = false;
+    }, 3000);
+  })
+  .catch(err => {
+    document.getElementById("successBox").classList.add("show");
+    const msg = document.querySelector(".success-box .msg");
+    const sub = document.querySelector(".success-box .sub");
+    msg.textContent = "❌ Erreur de connexion";
+    msg.style.color = "#ef4444";
+    sub.textContent = "Vérifie ton URL Google Sheets Web App";
+    btn.textContent = "📊 Envoyer à Google Sheets";
+    btn.classList.remove("loading");
+    btn.disabled = false;
+    setTimeout(() => {
+      msg.textContent = "✅ Données envoyées!";
+      msg.style.color = "#10b981";
+      sub.textContent = "Vérifie ton Google Sheet pour la nouvelle entrée";
+      document.getElementById("successBox").classList.remove("show");
+    }, 4000);
+  });
+}
+
+function resetAll(){
+  if(!confirm("Reset all data?")) return;
+  D = {buts:0,ast:0,tirs:0,tc:0,pf:0,pfr:0,plb:0,plbr:0,pk:0,pkr:0,du:0,dg:0,ae:0,ag:0,dr:0,drr:0,ta:0,tr:0,int:0,br:0,cj:0,cr:0,notes:"",int_z:[0,0,0,0],br_z:[0,0,0,0],dg_z:[0,0,0,0],drr_z:[0,0,0,0],tr_z:[0,0,0,0]};
+  TS = []; tsHL = false; lastAnalysis = null; pendingZoneStat = null;
+  INFO = {ath:"",adv:"",date:today,comp:"League",min:90,pos:"MID",cat:""};
+  document.getElementById("athInput").value = "";
+  document.getElementById("advInput").value = "";
+  document.getElementById("dateInput").value = today;
+  document.getElementById("minInput").value = "90";
+  document.getElementById("apiKeyInput").value = API_KEY;
+  document.getElementById("posInput").value = "MID";
+  document.getElementById("catInput").value = "";
+  checkStart();
+  showPage("setup");
+}
+
+async function generateReport(){
+  if(!API_KEY){
+    document.getElementById("reportStatus").textContent = "Error: API Key not set. Add one in the setup page.";
+    return;
+  }
+
+  const btn = document.getElementById("reportBtn");
+  const status = document.getElementById("reportStatus");
+  btn.disabled = true;
+  status.textContent = "Generating... (30-45 seconds)";
+
+  const hasHL = TS.some(t=>t.hl);
+  const tsText = TS.map(t=>`${t.time}${t.hl?" ⭐":""} — ${t.note||"—"}`).join("\n");
+  const totalPas = D.pf + D.plb;
+  const totalPr = D.pfr + D.plbr;
+  const passPct = totalPas > 0 ? Math.round(totalPr/totalPas*100) : 0;
+
+  const systemPrompt = `You are the Head of Player Development at a top-tier MLS Next academy with 30+ years of experience developing youth soccer athletes. You combine deep tactical knowledge, sports science expertise, and a genuine passion for helping young players reach their full potential.
+
+Your analysis style: DIRECT, DATA-DRIVEN, POSITION-SPECIFIC, DEVELOPMENT-FOCUSED.
+Athletes are in Quebec, Canada. Use English for the report.
+
+Reference benchmarks (MLS Next academy averages per 90 min):
+Pass completion: 78% (MID/DEF), 72% (ATT) | Key pass completion: 55% | Duel success: 50% | Aerial success: 45% | Dribble success: 52% (ATT/MID), 40% (DEF) | Tackle success: 55% | Shots on target: 45% | Interceptions: 3.2/90 | Ball recoveries: 4.5/90
+
+Adjust expectations based on POSITION, CATEGORY (U14-U15: technical; U16-U17: tactical; U18+: maturity), MINUTES PLAYED, COMPETITION LEVEL.
+When tactical notes/timestamps are provided by the coach, treat them as PRIMARY CONTEXT.
+Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
+
+  const userPrompt = `Analyze this match:
+Player: ${INFO.ath} | Opponent: ${INFO.adv} | Date: ${INFO.date} | Position: ${INFO.pos} | Competition: ${INFO.comp} | Category: ${INFO.cat||"Senior"} | Minutes: ${INFO.min}
+Stats: Goals:${D.buts} Ast:${D.ast} Shots:${D.tc}/${D.tirs} FwdPass:${D.pfr}/${D.pf} LatBackPass:${D.plbr}/${D.plb} TotalPass:${totalPr}/${totalPas}(${passPct}%) KeyP:${D.pkr}/${D.pk} Duels:${D.dg}/${D.du} Aerials:${D.ag}/${D.ae} Drib:${D.drr}/${D.dr} Tack:${D.tr}/${D.ta} Int:${D.int} BR:${D.br} YellowCards:${D.cj} RedCards:${D.cr} PBI:${calcPBIndex()} HL:${hasHL?"Y":"N"}
+Zones(Z1=DefBox,Z2=DefMid,Z3=AttMid,Z4=AttFinal): Int:[${D.int_z}] BR:[${D.br_z}] DuelsWon:[${D.dg_z}] DribOK:[${D.drr_z}] TackOK:[${D.tr_z}]
+${tsText ? "TIMESTAMPS:\n"+tsText : ""}
+${D.notes ? "COACH NOTES:\n"+D.notes : ""}
+
+JSON format:
+{"match_summary":"2-3 sentences","bullets_positive":["4 items with stats"],"bullets_improve":["3 items with data"],"bullets_growth":["1 mental/leadership item"],"strengths":{"technical":"max 10w","tactical":"max 10w","physical":"max 10w","mental":"max 10w"},"development":{"technical":"max 10w","tactical":"max 10w","physical":"max 10w","mental":"max 10w"},"next_match_objective":"1 measurable goal","short_term":"1-2 matches focus, max 3 sentences","medium_term":"3-5 matches focus, max 3 sentences","drills":["3 specific drills"],"watch_reference":"1 pro player + skill","watch_url":"https://www.youtube.com/results?search_query=Player+skill","quote":"motivational quote tied to match"}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{role:"user", content: userPrompt}]
+      })
+    });
+    const data = await res.json();
+    if(data.error){
+      throw new Error(data.error.message || "API error: " + JSON.stringify(data.error));
+    }
+    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "";
+    const clean = text.replace(/```json|```/g,"").trim();
+    const analysis = JSON.parse(clean);
+    lastAnalysis = analysis;
+
+    // Build the HTML report
+    buildReportHTML(analysis);
+    document.getElementById("reportModal").classList.add("show");
+    btn.textContent = "✅ Report generated!";
+    btn.classList.add("done");
+    status.textContent = "Click Print / Save PDF to download.";
+    setTimeout(()=>{ btn.textContent="📄 Generate Post-Match Report"; btn.classList.remove("done"); btn.disabled=false; }, 4000);
+  } catch(err) {
+    status.textContent = "Error: " + err.message + ". Check your connection and try again.";
+    btn.textContent = "📄 Generate Post-Match Report";
+    btn.disabled = false;
+  }
+}
+
+function buildRadarSVG(){
+  const cx=130, cy=130, maxR=105;
+  const cats = [
+    {label:"Shots", val: D.tirs>0 ? Math.round(D.tc/D.tirs*100) : 0, ref: BENCH.shots_pct},
+    {label:"Passes", val: (D.pf+D.plb)>0 ? Math.round((D.pfr+D.plbr)/(D.pf+D.plb)*100) : 0, ref: BENCH.passes_pct},
+    {label:"Duels", val: D.du>0 ? Math.round(D.dg/D.du*100) : 0, ref: BENCH.duels_pct},
+    {label:"Aerials", val: D.ae>0 ? Math.round(D.ag/D.ae*100) : 0, ref: BENCH.aerials_pct},
+    {label:"Dribbles", val: D.dr>0 ? Math.round(D.drr/D.dr*100) : 0, ref: BENCH.dribbles_pct},
+    {label:"Tackles", val: D.ta>0 ? Math.round(D.tr/D.ta*100) : 0, ref: BENCH.tackles_pct}
+  ];
+  const n = cats.length;
+  const angleStep = (2*Math.PI)/n;
+  const startAngle = -Math.PI/2;
+  function pol(angle, radius){ return [cx + radius*Math.cos(angle), cy + radius*Math.sin(angle)]; }
+
+  let grid = "";
+  [25,50,75,100].forEach(pct => {
+    const r = maxR * pct/100;
+    let pts = [];
+    for(let i=0;i<n;i++){ const [x,y] = pol(startAngle + i*angleStep, r); pts.push(`${x},${y}`); }
+    grid += `<polygon points="${pts.join(" ")}" fill="none" stroke="#e5e7eb" stroke-width="0.7"/>`;
+  });
+  let axes = "";
+  for(let i=0;i<n;i++){
+    const [x,y] = pol(startAngle + i*angleStep, maxR);
+    axes += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#d1d5db" stroke-width="0.5"/>`;
+  }
+  let refPts=[], valPts=[];
+  for(let i=0;i<n;i++){
+    let [rx,ry] = pol(startAngle+i*angleStep, maxR*Math.min(cats[i].ref,100)/100);
+    refPts.push(`${rx},${ry}`);
+    let [vx,vy] = pol(startAngle+i*angleStep, maxR*Math.min(cats[i].val,100)/100);
+    valPts.push(`${vx},${vy}`);
+  }
+  let dots="", labels="";
+  for(let i=0;i<n;i++){
+    const [vx,vy] = pol(startAngle+i*angleStep, maxR*Math.min(cats[i].val,100)/100);
+    dots += `<circle cx="${vx}" cy="${vy}" r="3" fill="#2563eb"/>`;
+    const [lx,ly] = pol(startAngle+i*angleStep, maxR+16);
+    const anchor = lx<cx-5?"end":lx>cx+5?"start":"middle";
+    const col = cats[i].val >= cats[i].ref ? "#059669" : "#d97706";
+    labels += `<text x="${lx}" y="${ly+2}" font-size="9" fill="#374151" text-anchor="${anchor}" font-weight="600">${cats[i].label}</text>`;
+    labels += `<text x="${lx}" y="${ly+13}" font-size="8" fill="${col}" text-anchor="${anchor}">${cats[i].val}%</text>`;
+  }
+  return `<div style="text-align:center;">
+    <svg width="260" height="280" viewBox="0 0 260 280" xmlns="http://www.w3.org/2000/svg">
+      ${grid}${axes}
+      <polygon points="${refPts.join(" ")}" fill="rgba(209,213,219,0.25)" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+      <polygon points="${valPts.join(" ")}" fill="rgba(37,99,235,0.15)" stroke="#2563eb" stroke-width="2"/>
+      ${dots}${labels}
+      <line x1="40" y1="268" x2="55" y2="268" stroke="#2563eb" stroke-width="2"/><text x="58" y="271" font-size="8" fill="#6b7280">Player</text>
+      <line x1="100" y1="268" x2="115" y2="268" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/><text x="118" y="271" font-size="8" fill="#6b7280">Reference</text>
+    </svg>
+  </div>`;
+}
+
+function buildReportHTML(a){
+  const P = (n,t)=> t>0? Math.round(n/t*100) : 0;
+  const PS = (n,t)=> t>0? Math.round(n/t*100)+"%" : "—";
+
+  function bar(val, col, ref){
+    const refPos = Math.min(ref,100);
+    const valW = Math.min(val,100);
+    return `<div style="position:relative;flex:1;height:12px;background:#e5e7eb;border-radius:6px;overflow:visible;">
+      ${val>0?`<div style="position:absolute;left:0;top:0;width:${valW}%;height:100%;background:${col};border-radius:6px;"></div>`:""}
+      ${ref>0?`<div style="position:absolute;left:${refPos}%;top:-2px;width:2px;height:16px;background:#1f2937;border-radius:1px;"></div>`:""}
+    </div>`;
+  }
+
+  const statsRows = [
+    {cat:"Shots on target",w:D.tc,t:D.tirs,col:"#ef4444",ref:BENCH.shots_pct},
+    {cat:"Passes",w:(D.pfr+D.plbr),t:(D.pf+D.plb),col:"#2563eb",ref:BENCH.passes_pct},
+    {cat:"Key passes",w:D.pkr,t:D.pk,col:"#3b82f6",ref:BENCH.key_p_pct},
+    {cat:"Duels",w:D.dg,t:D.du,col:"#f59e0b",ref:BENCH.duels_pct},
+    {cat:"Aerials",w:D.ag,t:D.ae,col:"#f59e0b",ref:BENCH.aerials_pct},
+    {cat:"Dribbles",w:D.drr,t:D.dr,col:"#10b981",ref:BENCH.dribbles_pct},
+    {cat:"Tackles",w:D.tr,t:D.ta,col:"#10b981",ref:BENCH.tackles_pct},
+  ];
+
+  const statsHTML = statsRows.map(r=>`
+    <div style="display:grid;grid-template-columns:110px 45px 50px 1fr 45px;align-items:center;gap:6px;margin-bottom:8px;">
+      <span style="font-size:11px;color:#374151;">${r.cat}</span>
+      <span style="font-size:11px;font-weight:700;color:#111827;">${r.w}/${r.t}</span>
+      <span style="font-size:11px;font-weight:700;color:${r.col};">${PS(r.w,r.t)}</span>
+      ${bar(P(r.w,r.t),r.col,r.ref)}
+      <span style="font-size:9px;color:#9ca3af;text-align:right;">ref ${r.ref}%</span>
+    </div>`).join("");
+
+  const comp = COMP_TO_NOTION[INFO.comp] || INFO.comp;
+  const pbIndex = calcPBIndex();
+  const dribPct = D.dr>0 ? Math.round(D.drr/D.dr*100) : 0;
+  const keyPPct = D.pk>0 ? Math.round(D.pkr/D.pk*100) : 0;
+
+  const html = `
+  <div style="background:#ffffff;color:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:0;min-height:100%;">
+    <!-- HEADER -->
+    <div style="background:#8b1a1a;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:18px;font-weight:800;">${INFO.ath} &nbsp;vs&nbsp; ${INFO.adv}</div>
+        <div style="font-size:11px;color:#f0b0b0;margin-top:2px;">${INFO.date} | ${comp} | ${INFO.min}min | ${INFO.pos} | PB Index: ${pbIndex}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px;font-weight:700;font-style:italic;">ProBreakthrough</div>
+        <div style="font-size:9px;color:#f0b0b0;">Player Development & Scouting</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 24px;">
+
+    <!-- KEY STATS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">PB INDEX</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${pbIndex}</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">MINUTES</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${INFO.min}</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">PASS %</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${PS(D.pfr+D.plbr,D.pf+D.plb)}</div>
+        <div style="font-size:9px;color:#9ca3af;">${D.pfr+D.plbr}/${D.pf+D.plb}</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">DRIBBLE %</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${D.dr>0?dribPct+"%":"—"}</div>
+        <div style="font-size:9px;color:#9ca3af;">${D.drr}/${D.dr}</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">INTERCEPT.</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${D.int}</div>
+        <div style="font-size:9px;color:#9ca3af;">ref 3.2/90</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#6b7280;font-weight:600;letter-spacing:0.5px;">KEY PASS %</div>
+        <div style="font-size:28px;font-weight:800;color:#111827;">${D.pk>0?keyPPct+"%":"—"}</div>
+        <div style="font-size:9px;color:#9ca3af;">${D.pkr}/${D.pk}</div>
+      </div>
+    </div>
+
+    <!-- RADAR + DETAILED STATS -->
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:16px;margin-bottom:16px;">
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:4px;letter-spacing:0.5px;">PERFORMANCE PROFILE</div>
+        ${buildRadarSVG()}
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:8px;letter-spacing:0.5px;">DETAILED STATISTICS</div>
+        <div style="font-size:9px;color:#9ca3af;display:grid;grid-template-columns:110px 45px 50px 1fr 45px;gap:6px;margin-bottom:6px;font-weight:600;">
+          <span>CATEGORY</span><span>W/T</span><span>RATE</span><span>vs REFERENCE</span><span style="text-align:right;"></span>
+        </div>
+        ${statsHTML}
+        <div style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:11px;color:#374151;">Interceptions</span>
+            <span><span style="font-size:11px;font-weight:700;color:#111827;">${D.int}</span> <span style="font-size:9px;color:#9ca3af;">ref: ${BENCH.interceptions}/90</span></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:11px;color:#374151;">Ball recoveries</span>
+            <span><span style="font-size:11px;font-weight:700;color:#111827;">${D.br}</span> <span style="font-size:9px;color:#9ca3af;">ref: ${BENCH.recoveries}/90</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCH ANALYSIS + STRENGTHS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:8px;letter-spacing:0.5px;">MATCH ANALYSIS</div>
+        ${(a.bullets_positive||[]).map(b=>`<div style="font-size:10px;color:#374151;margin-bottom:5px;line-height:1.4;"><span style="color:#059669;font-weight:700;">+</span> &nbsp;${b}</div>`).join("")}
+        ${(a.bullets_improve||[]).map(b=>`<div style="font-size:10px;color:#374151;margin-bottom:5px;line-height:1.4;"><span style="color:#d97706;font-weight:700;">!</span> &nbsp;${b}</div>`).join("")}
+        ${(a.bullets_growth||[]).map(b=>`<div style="font-size:10px;color:#374151;margin-bottom:5px;line-height:1.4;"><span style="color:#6b7280;font-weight:700;">-</span> &nbsp;${b}</div>`).join("")}
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:8px;letter-spacing:0.5px;">STRENGTHS & DEVELOPMENT</div>
+        ${["Technical","Tactical","Physical","Mental"].map(k=>{
+          const kl = k.toLowerCase();
+          return `<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:700;color:#111827;">${k}</span>
+            <div>
+              <div style="font-size:9px;color:#059669;font-weight:600;">+ ${a.strengths?.[kl]||"—"}</div>
+              <div style="font-size:9px;color:#9ca3af;">- ${a.development?.[kl]||"—"}</div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:12px;letter-spacing:0.5px;">RECOMMENDATIONS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div>
+          <div style="border:2px solid #8b1a1a;border-radius:6px;padding:10px;margin-bottom:10px;">
+            <div style="font-size:9px;font-weight:700;color:#6b7280;margin-bottom:4px;">NEXT MATCH OBJECTIVE</div>
+            <div style="font-size:11px;font-weight:700;color:#111827;line-height:1.4;">${a.next_match_objective||""}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:#2563eb;margin-bottom:4px;">SHORT TERM (1-2 matches)</div>
+          <div style="font-size:10px;color:#374151;margin-bottom:12px;line-height:1.4;">${a.short_term||""}</div>
+          <div style="font-size:9px;font-weight:700;color:#2563eb;margin-bottom:4px;">MEDIUM TERM (3-5 matches)</div>
+          <div style="font-size:10px;color:#374151;line-height:1.4;">${a.medium_term||""}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:#6b7280;margin-bottom:4px;">TRAINING DRILLS</div>
+          ${(a.drills||[]).map((d,i)=>`<div style="font-size:10px;color:#374151;margin-bottom:5px;line-height:1.3;">${i+1}. ${d}</div>`).join("")}
+          <div style="font-size:9px;color:#9ca3af;font-style:italic;margin-top:8px;">Watch: ${a.watch_reference||""}</div>
+          ${a.watch_url ? `<div style="font-size:9px;margin-top:2px;"><a href="${a.watch_url}" target="_blank" style="color:#2563eb;text-decoration:none;">${a.watch_url}</a></div>` : ""}
+        </div>
+      </div>
+    </div>
+
+    <!-- QUOTE -->
+    <div style="text-align:center;font-size:12px;color:#8b1a1a;font-style:italic;font-weight:700;margin-bottom:16px;padding:0 20px;line-height:1.5;">
+      "${a.quote||"Consistent progress is built one match at a time."}"
+    </div>
+
+    <!-- FOOTER -->
+    <div style="border-top:1px solid #e5e7eb;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;">
+      <span>ProBreakthrough | Player Development & Scouting | ESTD 2020</span>
+      <span>Benchmarks: MLS Next academy midfielder avg (approx.)</span>
+    </div>
+
+    </div>
+  </div>`;
+
+  document.getElementById("reportFrame").innerHTML = html;
+}
+
+// ═══ SAVE PDF TO GOOGLE DRIVE ═══
+async function loadHtml2Pdf(){
+  if(window.html2pdf) return;
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js";
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("Impossible de charger html2pdf.js"));
+    document.head.appendChild(s);
+  });
+}
+
+async function saveToDrive(){
+  if(!SHEETS_URL){
+    alert("Configure l'URL Google Sheets d'abord (page Setup).");
+    return;
+  }
+  const btn = document.getElementById("saveBtn");
+  btn.textContent = "⏳ Génération PDF...";
+  btn.disabled = true;
+
+  try {
+    // 1. Load html2pdf library (lazy)
+    await loadHtml2Pdf();
+
+    // 2. Generate PDF from the report frame
+    const element = document.getElementById("reportFrame");
+    const opt = {
+      margin: [2, 0, 2, 0],
+      filename: "report.pdf",
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    };
+    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf("blob");
+
+    // 3. Convert blob to base64
+    btn.textContent = "⏳ Envoi vers Drive...";
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    // 4. Send to Google Apps Script
+    const payload = {
+      action: "savePDF",
+      pdf_base64: base64,
+      athlete: INFO.ath,
+      date: INFO.date,
+      opponent: INFO.adv,
+      competition: INFO.comp,
+      position: INFO.pos
+    };
+
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify(payload)
+    });
+
+    btn.textContent = "✅ Sauvegardé!";
+    setTimeout(() => { btn.textContent = "💾 Sauvegarder dans Drive"; btn.disabled = false; }, 3000);
+
+  } catch(err){
+    console.error("Save to Drive error:", err);
+    btn.textContent = "❌ Erreur";
+    setTimeout(() => { btn.textContent = "💾 Sauvegarder dans Drive"; btn.disabled = false; }, 3000);
+  }
+}
+
+// Load saved settings on page load
+window.addEventListener("DOMContentLoaded", () => {
+  loadSheetsUrl();
+});
+</script>
+</body>
+</html>
