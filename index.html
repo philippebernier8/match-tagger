@@ -1,3 +1,7 @@
+https://raw.githubusercontent.com/philippebernier8/match-tagger/main/index.html
+→ https://raw.githubusercontent.com/philippebernier8/match-tagger/main/index.html
+Content-Type: text/plain; charset=utf-8
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -393,13 +397,12 @@ const advInput = document.getElementById("advInput");
 advInput.addEventListener("input", () => { INFO.adv=advInput.value; checkStart(); });
 
 // Google Sheets URL management
-let SHEETS_URL = "";
+const DEFAULT_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxiAs36wU4EJlpQBlUvjB3xxolhBHf_iG7hlrTqjyxCJKYBcFMRlZ7aFQ-7xMhY01lT0w/exec";
+let SHEETS_URL = DEFAULT_SHEETS_URL;
 function loadSheetsUrl(){
   const saved = localStorage.getItem("pb_sheets_url");
-  if(saved){
-    SHEETS_URL = saved;
-    document.getElementById("sheetsUrlInput").value = SHEETS_URL;
-  }
+  SHEETS_URL = saved || DEFAULT_SHEETS_URL;
+  document.getElementById("sheetsUrlInput").value = SHEETS_URL;
 }
 document.getElementById("sheetsUrlInput").addEventListener("input", (e) => {
   SHEETS_URL = e.target.value.trim();
